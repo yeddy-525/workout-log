@@ -1026,7 +1026,15 @@ async function syncFromRemote() {
     const res = await fetch(apiUrl + '?action=getAll&user=' + encodeURIComponent(currentUser));
     const json = await res.json();
     if (json.routine) { try { routine = JSON.parse(json.routine); saveRoutineLocal(); } catch(e) {} }
-    if (json.records) { Object.assign(records, json.records); saveRecords(); }
+    if (json.records) {
+      const fixed = {};
+      Object.entries(json.records).forEach(([k, v]) => {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(k)) { fixed[k] = v; }
+        else { try { const d = new Date(k); fixed[d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')] = v; } catch(e) {} }
+      });
+      Object.assign(records, fixed);
+      saveRecords();
+    }
     setSyncDot('ok');
     const active = document.querySelector('.tab-content.active');
     if (active?.id === 'tab-today') renderToday();

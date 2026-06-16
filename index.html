@@ -544,6 +544,7 @@ function showTab(tab) {
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     document.getElementById('nav-' + t).classList.toggle('active', t === tab);
   });
+  document.getElementById('save-btn').style.display = tab === 'today' ? 'block' : 'none';
   if (tab === 'today') renderToday();
   if (tab === 'calendar') renderCalendar();
   if (tab === 'routine') renderRoutine();

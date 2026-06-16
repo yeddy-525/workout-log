@@ -127,7 +127,9 @@
     .split-ex-name{font-size:13px;font-weight:500;flex:1;}
     .split-ex-info{font-size:12px;color:var(--muted);}
     .del-btn{padding:5px 10px;background:var(--red-lt);color:var(--red);border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:inherit;flex-shrink:0;}
-    .add-ex-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;padding-top:10px;border-top:1px solid var(--border);}
+    .add-ex-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;padding-top:10px;border-top:1px solid var(--border);align-items:flex-end;}
+    .input-labeled{display:flex;flex-direction:column;gap:3px;align-items:center;}
+    .input-label{font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;}
     .r-input{padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;outline:none;background:white;}
     .r-input:focus{border-color:var(--blue);}
     .r-input.nm{flex:1;min-width:90px;}
@@ -204,11 +206,11 @@
           <button class="r-add-btn" style="background:var(--muted);flex-shrink:0;" onclick="openExPicker('today')">목록</button>
         </div>
         <div class="ex-suggestions" id="today-ex-sug"></div>
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <input class="r-input n" id="today-ex-sets" type="number" placeholder="세트" value="3" />
-          <input class="r-input n" id="today-ex-reps" type="number" placeholder="회" value="10" />
-          <input class="r-input n" id="today-ex-weight" type="number" placeholder="kg" />
-          <input class="r-input n" id="today-ex-rest" type="number" placeholder="휴식(초)" value="60" />
+        <div style="display:flex;gap:6px;margin-top:8px;align-items:flex-end;">
+          <div class="input-labeled"><span class="input-label">세트</span><input class="r-input n" id="today-ex-sets" type="number" value="3" min="1" /></div>
+          <div class="input-labeled"><span class="input-label">횟수</span><input class="r-input n" id="today-ex-reps" type="number" value="10" min="1" /></div>
+          <div class="input-labeled"><span class="input-label">kg</span><input class="r-input n" id="today-ex-weight" type="number" min="0" placeholder="0" /></div>
+          <div class="input-labeled"><span class="input-label">휴식(초)</span><input class="r-input n" id="today-ex-rest" type="number" value="60" min="0" style="width:62px;" /></div>
           <button class="r-add-btn" onclick="addTodayExercise()">추가</button>
         </div>
       </div>
@@ -444,6 +446,7 @@ function addTodayExercise() {
   const weight = parseFloat(document.getElementById('today-ex-weight').value) || 0;
   const rest = parseInt(document.getElementById('today-ex-rest').value) || 60;
   if (!name) { document.getElementById('today-ex-name').focus(); return; }
+  if (weight < 0) { alert('kg은 0 이상으로 입력해주세요'); return; }
   const key = todayStr();
   if (!records[key]) records[key] = {};
   if (!records[key].split) records[key].split = '직접';
@@ -642,8 +645,10 @@ function toggleExpand(ei) {
 }
 
 function updateSet(ei, si, field, val) {
+  const v = parseFloat(val) || 0;
+  if (field === 'weight' && v < 0) { alert('kg은 0 이상으로 입력해주세요'); renderExercises(); return; }
   const rec = records[todayStr()];
-  rec.exercises[ei].sets[si][field] = parseFloat(val) || 0;
+  rec.exercises[ei].sets[si][field] = v;
   saveRecords();
 }
 
@@ -804,10 +809,10 @@ function renderRoutine() {
         </div>
         <div class="ex-suggestions" id="ex-sug-${si}"></div>
         <div class="add-ex-row" style="margin-top:4px;">
-          <input class="r-input n" id="exs-${si}" type="number" placeholder="세트" value="4" />
-          <input class="r-input n" id="exr-${si}" type="number" placeholder="횟수" value="10" />
-          <input class="r-input n" id="exw-${si}" type="number" placeholder="kg" />
-          <input class="r-input n" id="exrt-${si}" type="number" placeholder="휴식(초)" value="60" />
+          <div class="input-labeled"><span class="input-label">세트</span><input class="r-input n" id="exs-${si}" type="number" value="4" min="1" /></div>
+          <div class="input-labeled"><span class="input-label">횟수</span><input class="r-input n" id="exr-${si}" type="number" value="10" min="1" /></div>
+          <div class="input-labeled"><span class="input-label">kg</span><input class="r-input n" id="exw-${si}" type="number" min="0" placeholder="0" /></div>
+          <div class="input-labeled"><span class="input-label">휴식(초)</span><input class="r-input n" id="exrt-${si}" type="number" value="60" min="0" style="width:62px;" /></div>
           <button class="r-add-btn" onclick="addExercise(${si})">추가</button>
         </div>
         <div class="del-split-row">
@@ -877,6 +882,7 @@ function addExercise(si) {
   const weight = parseFloat(document.getElementById(`exw-${si}`).value) || 0;
   const rest = parseInt(document.getElementById(`exrt-${si}`).value) || 60;
   if (!name) return;
+  if (weight < 0) { alert('kg은 0 이상으로 입력해주세요'); return; }
   routine.splits[si].exercises.push({ name, sets, reps, weight, rest });
   saveRoutineLocal();
   syncRoutine();

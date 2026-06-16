@@ -190,10 +190,7 @@
       <div class="header-title">운동기록 💪</div>
       <div class="header-user" id="header-user"></div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div class="sync-dot" id="sync-dot"></div>
-      <button class="header-save-btn" id="save-btn" onclick="saveAll()">저장</button>
-    </div>
+    <div class="sync-dot" id="sync-dot"></div>
   </div>
 
   <!-- 오늘 탭 -->
@@ -225,6 +222,9 @@
     <div class="meal-section">
       <div class="section-label" style="margin-top:0;">식단 기록</div>
       <div id="meal-wrap"></div>
+    </div>
+    <div style="padding:8px 16px 24px;">
+      <button class="header-save-btn" id="save-btn" onclick="saveAll()" style="width:100%;padding:14px;font-size:15px;">저장</button>
     </div>
   </div>
 

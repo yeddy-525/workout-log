@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#111827">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <title>운동기록</title>
+  <style>
+    :root {
+      --blue:#2563EB; --blue-lt:#EFF6FF; --blue-dk:#1D4ED8;
+      --green:#16A34A; --green-lt:#F0FDF4; --green-dk:#15803D;
+      --red:#DC2626; --red-lt:#FEF2F2;
+      --bg:#F8FAFC; --card:#FFFFFF; --text:#111827; --muted:#6B7280; --border:#E5E7EB;
+      --radius:14px; --radius-sm:8px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    html,body{height:100%;background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--text);font-size:15px;}
+    .page{display:none;min-height:100vh;}
+    .page.active{display:block;}
+
+    /* 인트로 */
+    .intro-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;}
+    .intro-logo{font-size:48px;margin-bottom:10px;}
+    .intro-title{font-size:28px;font-weight:800;letter-spacing:-.03em;margin-bottom:6px;}
+    .intro-sub{font-size:14px;color:var(--muted);margin-bottom:40px;}
+    .intro-input{width:100%;max-width:320px;padding:14px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:16px;font-family:inherit;outline:none;background:white;margin-bottom:12px;}
+    .intro-input:focus{border-color:var(--blue);}
+    .intro-btn{width:100%;max-width:320px;padding:15px;background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;}
+
+    /* 메인 */
+    #page-main{padding-bottom:70px;}
+    .main-header{background:white;border-bottom:1px solid var(--border);padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+    .header-title{font-size:18px;font-weight:800;letter-spacing:-.03em;}
+    .header-user{font-size:12px;color:var(--muted);margin-top:2px;}
+    .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;}
+
+    /* 하단 탭바 */
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);display:flex;z-index:20;padding-bottom:env(safe-area-inset-bottom);}
+    .nav-btn{flex:1;padding:10px 0 8px;border:none;background:none;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:10px;font-weight:500;}
+    .nav-btn.active{color:var(--blue);}
+    .nav-icon{font-size:22px;line-height:1;}
+
+    /* 탭 */
+    .tab-content{display:none;}
+    .tab-content.active{display:block;}
+
+    /* 오늘 탭 */
+    .today-header{padding:20px 16px 8px;}
+    .today-date{font-size:12px;color:var(--muted);margin-bottom:4px;}
+    .today-title{font-size:22px;font-weight:800;letter-spacing:-.03em;}
+    .split-selector{padding:12px 16px 8px;display:flex;flex-wrap:wrap;gap:8px;}
+    .split-btn{padding:8px 18px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);transition:all .15s;}
+    .split-btn.rest-btn{color:var(--muted);}
+    .exercise-section{padding:0 16px;display:flex;flex-direction:column;gap:10px;}
+    .ex-card{background:white;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;}
+    .ex-card-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+    .ex-card-name{font-size:15px;font-weight:700;}
+    .ex-progress{font-size:12px;color:var(--muted);}
+    .ex-progress.all-done{color:var(--green-dk);font-weight:600;}
+    .ex-sets{border-top:1px solid var(--border);}
+    .set-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);}
+    .set-row:last-child{border-bottom:none;}
+    .set-row.done-row{background:var(--green-lt);}
+    .set-num{font-size:12px;font-weight:600;color:var(--muted);width:18px;flex-shrink:0;}
+    .set-input{width:58px;padding:7px 6px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;text-align:center;outline:none;background:white;}
+    .set-input:focus{border-color:var(--blue);}
+    .set-input:disabled{background:#F9FAFB;color:var(--muted);}
+    .set-unit{font-size:11px;color:var(--muted);flex-shrink:0;}
+    .set-check-btn{margin-left:auto;padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);flex-shrink:0;white-space:nowrap;}
+    .set-check-btn.done{border-color:var(--green);background:var(--green-lt);color:var(--green-dk);}
+    .finish-btn{margin:20px 16px 8px;width:calc(100% - 32px);padding:15px;background:var(--green);color:white;border:none;border-radius:var(--radius-sm);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;}
+    .empty-msg{text-align:center;padding:40px 16px;color:var(--muted);font-size:14px;line-height:1.8;}
+
+    /* 타이머 */
+    .timer-sheet{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);border-radius:20px 20px 0 0;padding:16px 24px calc(80px + env(safe-area-inset-bottom));z-index:30;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1.25,.42,.98);box-shadow:0 -4px 24px rgba(0,0,0,.1);}
+    .timer-sheet.show{transform:translateY(0);}
+    .timer-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px;}
+    .timer-label{font-size:13px;color:var(--muted);text-align:center;margin-bottom:4px;}
+    .timer-count{font-size:68px;font-weight:800;text-align:center;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1.1;}
+    .timer-count.urgent{color:var(--red);}
+    .timer-count.done-flash{color:var(--green-dk);}
+    .timer-presets{display:flex;gap:8px;justify-content:center;margin:14px 0;}
+    .timer-preset{padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);}
+    .timer-preset.active{border-color:var(--blue);background:var(--blue-lt);color:var(--blue-dk);}
+    .timer-btns{display:flex;gap:8px;}
+    .timer-skip{flex:1;padding:13px;border:1.5px solid var(--border);background:white;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+    .timer-add{padding:13px 20px;border:none;background:var(--blue-lt);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--blue-dk);}
+
+    /* 캘린더 */
+    .cal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 12px;}
+    .cal-month-title{font-size:20px;font-weight:800;letter-spacing:-.03em;}
+    .cal-nav{padding:8px 14px;border:1px solid var(--border);background:white;border-radius:var(--radius-sm);font-size:16px;cursor:pointer;}
+    .cal-grid{padding:0 12px;}
+    .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px;}
+    .cal-dow-cell{text-align:center;font-size:11px;font-weight:600;color:var(--muted);padding:4px 0;}
+    .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+    .cal-cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;cursor:pointer;}
+    .cal-cell.empty{cursor:default;}
+    .cal-cell.today{background:var(--blue-lt);}
+    .cal-cell.today .cal-num{color:var(--blue-dk);font-weight:700;}
+    .cal-cell.worked{background:var(--green-lt);}
+    .cal-cell.rested{background:#F3F4F6;}
+    .cal-num{font-size:13px;font-weight:500;}
+    .cal-tag{font-size:9px;font-weight:600;color:var(--green-dk);margin-top:1px;}
+    .cal-tag.rest{color:var(--muted);}
+    .cal-detail{margin:14px 14px 0;background:white;border-radius:var(--radius);border:1px solid var(--border);padding:16px;}
+    .cal-detail-date{font-size:12px;color:var(--muted);margin-bottom:6px;}
+    .cal-detail-split{font-size:18px;font-weight:700;margin-bottom:10px;}
+    .cal-detail-ex{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:5px;}
+
+    /* 루틴 탭 */
+    .routine-wrap{padding:16px;}
+    .section-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;margin-top:20px;}
+    .section-label:first-child{margin-top:0;}
+    .split-card{background:white;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:8px;overflow:hidden;}
+    .split-card-head{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+    .split-card-name{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;}
+    .split-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+    .split-card-meta{font-size:12px;color:var(--muted);}
+    .split-body{border-top:1px solid var(--border);padding:12px 16px;display:flex;flex-direction:column;gap:8px;}
+    .split-ex-row{display:flex;align-items:center;gap:8px;}
+    .split-ex-name{font-size:13px;font-weight:500;flex:1;}
+    .split-ex-info{font-size:12px;color:var(--muted);}
+    .del-btn{padding:5px 10px;background:var(--red-lt);color:var(--red);border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:inherit;flex-shrink:0;}
+    .add-ex-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;padding-top:10px;border-top:1px solid var(--border);}
+    .r-input{padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;outline:none;background:white;}
+    .r-input:focus{border-color:var(--blue);}
+    .r-input.nm{flex:1;min-width:90px;}
+    .r-input.n{width:54px;text-align:center;}
+    .r-add-btn{padding:8px 14px;background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+    .add-split-btn{width:100%;padding:13px;background:var(--blue-lt);color:var(--blue-dk);border:1.5px dashed var(--blue);border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;}
+    .del-split-row{margin-top:4px;}
+  </style>
+</head>
+<body>
+
+<!-- 인트로 -->
+<div id="page-intro" class="page active">
+  <div class="intro-wrap">
+    <div class="intro-logo">💪</div>
+    <div class="intro-title">운동기록</div>
+    <div class="intro-sub">나만의 루틴을 기록해요</div>
+    <input class="intro-input" id="nickname-input" placeholder="닉네임을 입력해주세요" maxlength="10" />
+    <button class="intro-btn" onclick="register()">시작하기</button>
+  </div>
+</div>
+
+<!-- 메인 -->
+<div id="page-main" class="page">
+  <div class="main-header">
+    <div>
+      <div class="header-title">운동기록 💪</div>
+      <div class="header-user" id="header-user"></div>
+    </div>
+    <div class="sync-dot" id="sync-dot"></div>
+  </div>
+
+  <!-- 오늘 탭 -->
+  <div id="tab-today" class="tab-content active">
+    <div class="today-header">
+      <div class="today-date" id="today-date"></div>
+      <div class="today-title" id="today-title">오늘 뭐 할 거야?</div>
+    </div>
+    <div class="split-selector" id="split-selector"></div>
+    <div class="exercise-section" id="exercise-section"></div>
+    <button class="finish-btn" id="finish-btn" onclick="finishWorkout()" style="display:none;">운동 완료 💪</button>
+  </div>
+
+  <!-- 캘린더 탭 -->
+  <div id="tab-calendar" class="tab-content">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+      <div class="cal-month-title" id="cal-month"></div>
+      <button class="cal-nav" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-dow">
+        <div class="cal-dow-cell">일</div><div class="cal-dow-cell">월</div><div class="cal-dow-cell">화</div>
+        <div class="cal-dow-cell">수</div><div class="cal-dow-cell">목</div><div class="cal-dow-cell">금</div><div class="cal-dow-cell">토</div>
+      </div>
+      <div class="cal-days" id="cal-days"></div>
+    </div>
+    <div id="cal-detail"></div>
+  </div>
+
+  <!-- 루틴 탭 -->
+  <div id="tab-routine" class="tab-content">
+    <div class="routine-wrap" id="routine-wrap"></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="nav-today" onclick="showTab('today')">
+      <span class="nav-icon">🏋️</span>오늘
+    </button>
+    <button class="nav-btn" id="nav-calendar" onclick="showTab('calendar')">
+      <span class="nav-icon">📅</span>캘린더
+    </button>
+    <button class="nav-btn" id="nav-routine" onclick="showTab('routine')">
+      <span class="nav-icon">⚙️</span>루틴
+    </button>
+  </nav>
+</div>
+
+<!-- 타이머 -->
+<div id="timer-sheet" class="timer-sheet">
+  <div class="timer-handle"></div>
+  <div class="timer-label" id="timer-label">휴식 중 🛌</div>
+  <div class="timer-count" id="timer-count">90</div>
+  <div class="timer-presets">
+    <button class="timer-preset" onclick="setTimerDuration(60)">1분</button>
+    <button class="timer-preset active" onclick="setTimerDuration(90)">1분 30초</button>
+    <button class="timer-preset" onclick="setTimerDuration(120)">2분</button>
+    <button class="timer-preset" onclick="setTimerDuration(180)">3분</button>
+  </div>
+  <div class="timer-btns">
+    <button class="timer-skip" onclick="skipTimer()">건너뛰기</button>
+    <button class="timer-add" onclick="addTimerSeconds(30)">+30초</button>
+  </div>
+</div>
+
+<script>
+const API_URL = '';
+const COLORS = ['#2563EB','#16A34A','#DC2626','#EA580C','#7C3AED','#0891B2','#DB2777','#65A30D'];
+
+let currentUser = null;
+let routine = { splits: [] };
+let records = {};
+let expandedEx = null;
+let expandedSplit = null;
+let calOffset = 0;
+let timerDuration = 90;
+let timerRemaining = 0;
+let timerInterval = null;
+let apiUrl = localStorage.getItem('workout_api_url') || API_URL;
+
+// ── 유틸 ──
+function dateStr(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function todayStr() { return dateStr(); }
+
+// ── 스토리지 ──
+function loadAll() {
+  currentUser = localStorage.getItem('workout_user');
+  try { routine = JSON.parse(localStorage.getItem('workout_routine') || '{"splits":[]}'); } catch(e) { routine = {splits:[]}; }
+  try { records = JSON.parse(localStorage.getItem('workout_records') || '{}'); } catch(e) { records = {}; }
+}
+function saveRoutineLocal() { localStorage.setItem('workout_routine', JSON.stringify(routine)); }
+function saveRecords() { localStorage.setItem('workout_records', JSON.stringify(records)); }
+function setSyncDot(s) {
+  const d = document.getElementById('sync-dot');
+  if (!d) return;
+  d.style.background = s === 'ok' ? 'var(--green)' : s === 'syncing' ? '#F59E0B' : 'var(--red)';
+}
+
+// ── 등록 ──
+function register() {
+  const name = document.getElementById('nickname-input').value.trim();
+  if (!name) { document.getElementById('nickname-input').focus(); return; }
+  localStorage.setItem('workout_user', name);
+  currentUser = name;
+  enterMain();
+}
+
+// ── 진입 ──
+function enterMain() {
+  document.getElementById('page-intro').classList.remove('active');
+  document.getElementById('page-main').classList.add('active');
+  document.getElementById('header-user').textContent = currentUser;
+  showTab('today');
+  syncFromRemote();
+}
+
+function showTab(tab) {
+  ['today','calendar','routine'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('nav-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'today') renderToday();
+  if (tab === 'calendar') renderCalendar();
+  if (tab === 'routine') renderRoutine();
+}
+
+// ── 오늘 탭 ──
+function renderToday() {
+  const now = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('today-date').textContent = `${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]})`;
+  const rec = records[todayStr()];
+  if (rec?.split) {
+    document.getElementById('today-title').textContent = rec.split === '쉬는날' ? '오늘은 쉬는 날 😴' : rec.split + ' 운동 🔥';
+  } else {
+    document.getElementById('today-title').textContent = '오늘 뭐 할 거야?';
+  }
+  renderSplitSelector();
+  renderExercises();
+}
+
+function renderSplitSelector() {
+  const container = document.getElementById('split-selector');
+  const todaySplit = records[todayStr()]?.split;
+  let html = routine.splits.map((s, i) => {
+    const c = COLORS[i % COLORS.length];
+    const active = todaySplit === s.name;
+    const style = active ? `border-color:${c};background:${c}18;color:${c};` : '';
+    return `<button class="split-btn" style="${style}" onclick="selectSplit('${s.name}')">${s.name}</button>`;
+  }).join('');
+  const restActive = todaySplit === '쉬는날';
+  html += `<button class="split-btn rest-btn" style="${restActive ? 'border-color:#6B7280;background:#F3F4F6;color:#374151;' : ''}" onclick="selectSplit('쉬는날')">😴 쉬는날</button>`;
+  container.innerHTML = html;
+}
+
+function selectSplit(name) {
+  const key = todayStr();
+  if (!records[key]) records[key] = {};
+
+  if (name === '쉬는날') {
+    records[key] = { split: '쉬는날', exercises: [] };
+    saveRecords();
+    syncRecord(key);
+    renderToday();
+    return;
+  }
+
+  if (records[key].split !== name) {
+    const splitData = routine.splits.find(s => s.name === name);
+    const exercises = (splitData?.exercises || []).map(ex => ({
+      name: ex.name,
+      sets: Array.from({length: ex.sets}, () => ({ weight: ex.weight, reps: ex.reps, done: false }))
+    }));
+    records[key] = { split: name, exercises };
+    saveRecords();
+  }
+  expandedEx = 0;
+  renderToday();
+}
+
+function renderExercises() {
+  const container = document.getElementById('exercise-section');
+  const finishBtn = document.getElementById('finish-btn');
+  const rec = records[todayStr()];
+
+  if (!rec?.split || rec.split === '쉬는날') {
+    container.innerHTML = '';
+    finishBtn.style.display = 'none';
+    return;
+  }
+  if (!rec.exercises?.length) {
+    container.innerHTML = '<div class="empty-msg">이 분할에 운동이 없어요<br>루틴 탭에서 추가해주세요 ⚙️</div>';
+    finishBtn.style.display = 'none';
+    return;
+  }
+
+  const allDone = rec.exercises.every(ex => ex.sets.every(s => s.done));
+  finishBtn.style.display = allDone ? 'block' : 'none';
+
+  container.innerHTML = rec.exercises.map((ex, ei) => {
+    const doneCount = ex.sets.filter(s => s.done).length;
+    const total = ex.sets.length;
+    const exDone = doneCount === total;
+    const expanded = expandedEx === ei;
+
+    let setsHtml = '';
+    if (expanded) {
+      setsHtml = '<div class="ex-sets">' + ex.sets.map((set, si) => `
+        <div class="set-row ${set.done ? 'done-row' : ''}">
+          <span class="set-num">${si+1}</span>
+          <input class="set-input" type="number" value="${set.weight||''}" placeholder="kg"
+            onchange="updateSet(${ei},${si},'weight',this.value)" ${set.done?'disabled':''} />
+          <span class="set-unit">kg</span>
+          <input class="set-input" type="number" value="${set.reps||''}" placeholder="회"
+            onchange="updateSet(${ei},${si},'reps',this.value)" ${set.done?'disabled':''} />
+          <span class="set-unit">회</span>
+          <button class="set-check-btn ${set.done?'done':''}" onclick="toggleSet(${ei},${si})">
+            ${set.done ? '✓ 완료' : '완료'}
+          </button>
+        </div>`).join('') + '</div>';
+    }
+
+    return `<div class="ex-card">
+      <div class="ex-card-header" onclick="toggleExpand(${ei})">
+        <div class="ex-card-name">${ex.name}</div>
+        <div class="ex-progress ${exDone ? 'all-done' : ''}">${doneCount}/${total}세트 ${exDone ? '✓' : expanded ? '▲' : '▼'}</div>
+      </div>
+      ${setsHtml}
+    </div>`;
+  }).join('');
+}
+
+function toggleExpand(ei) {
+  expandedEx = expandedEx === ei ? null : ei;
+  renderExercises();
+}
+
+function updateSet(ei, si, field, val) {
+  const rec = records[todayStr()];
+  rec.exercises[ei].sets[si][field] = parseFloat(val) || 0;
+  saveRecords();
+}
+
+function toggleSet(ei, si) {
+  const rec = records[todayStr()];
+  const set = rec.exercises[ei].sets[si];
+  set.done = !set.done;
+  saveRecords();
+  if (set.done) {
+    startTimer();
+    const ex = rec.exercises[ei];
+    if (ex.sets.every(s => s.done) && ei + 1 < rec.exercises.length) {
+      expandedEx = ei + 1;
+    }
+  }
+  renderExercises();
+}
+
+function finishWorkout() {
+  syncRecord(todayStr());
+  alert('수고했어 💪 오늘도 완료!');
+}
+
+// ── 타이머 ──
+function startTimer() {
+  timerRemaining = timerDuration;
+  document.getElementById('timer-sheet').classList.add('show');
+  document.getElementById('page-main').style.paddingBottom = '250px';
+  clearInterval(timerInterval);
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timerRemaining--;
+    updateTimerDisplay();
+    if (timerRemaining <= 0) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+      document.getElementById('timer-count').textContent = '완료!';
+      document.getElementById('timer-count').className = 'timer-count done-flash';
+      setTimeout(skipTimer, 1200);
+    }
+  }, 1000);
+}
+
+function setTimerDuration(s) {
+  timerDuration = s;
+  document.querySelectorAll('.timer-preset').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  if (timerInterval) { clearInterval(timerInterval); startTimer(); }
+  else { timerRemaining = s; updateTimerDisplay(); }
+}
+
+function addTimerSeconds(s) {
+  timerRemaining += s;
+  updateTimerDisplay();
+}
+
+function skipTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  document.getElementById('timer-sheet').classList.remove('show');
+  document.getElementById('page-main').style.paddingBottom = '70px';
+}
+
+function updateTimerDisplay() {
+  const el = document.getElementById('timer-count');
+  const m = Math.floor(timerRemaining / 60);
+  const s = timerRemaining % 60;
+  el.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : String(Math.max(0, timerRemaining));
+  el.className = 'timer-count' + (timerRemaining <= 10 ? ' urgent' : '');
+}
+
+// ── 캘린더 ──
+function renderCalendar() {
+  const base = new Date();
+  base.setDate(1);
+  base.setMonth(base.getMonth() + calOffset);
+  const year = base.getFullYear(), month = base.getMonth();
+  document.getElementById('cal-month').textContent = `${year}년 ${month+1}월`;
+
+  const firstDow = new Date(year, month, 1).getDay();
+  const lastDate = new Date(year, month+1, 0).getDate();
+  const todayKey = todayStr();
+
+  let html = '';
+  for (let i = 0; i < firstDow; i++) html += '<div class="cal-cell empty"></div>';
+  for (let d = 1; d <= lastDate; d++) {
+    const key = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const rec = records[key];
+    const isToday = key === todayKey;
+    const isWorked = rec?.split && rec.split !== '쉬는날';
+    const isRest = rec?.split === '쉬는날';
+    let cls = 'cal-cell';
+    if (isToday) cls += ' today';
+    else if (isWorked) cls += ' worked';
+    else if (isRest) cls += ' rested';
+    const tag = isWorked
+      ? `<div class="cal-tag">${rec.split.slice(0,2)}</div>`
+      : isRest ? '<div class="cal-tag rest">휴</div>' : '';
+    html += `<div class="${cls}" onclick="showDayDetail('${key}')"><div class="cal-num">${d}</div>${tag}</div>`;
+  }
+  document.getElementById('cal-days').innerHTML = html;
+  document.getElementById('cal-detail').innerHTML = '';
+}
+
+function changeMonth(d) { calOffset += d; renderCalendar(); }
+
+function showDayDetail(key) {
+  const rec = records[key];
+  const el = document.getElementById('cal-detail');
+  if (!rec?.split) { el.innerHTML = ''; return; }
+  const dt = new Date(key + 'T00:00:00');
+  const label = `${dt.getMonth()+1}월 ${dt.getDate()}일`;
+  if (rec.split === '쉬는날') {
+    el.innerHTML = `<div class="cal-detail"><div class="cal-detail-date">${label}</div><div class="cal-detail-split">😴 쉬는날</div></div>`;
+    return;
+  }
+  const exHtml = (rec.exercises || []).map(ex => {
+    const done = ex.sets.filter(s => s.done).length;
+    return `<div>• ${ex.name} &nbsp;${done}/${ex.sets.length}세트</div>`;
+  }).join('') || '<div>기록 없음</div>';
+  el.innerHTML = `<div class="cal-detail">
+    <div class="cal-detail-date">${label}</div>
+    <div class="cal-detail-split">${rec.split} 💪</div>
+    <div class="cal-detail-ex">${exHtml}</div>
+  </div>`;
+}
+
+// ── 루틴 탭 ──
+function renderRoutine() {
+  const wrap = document.getElementById('routine-wrap');
+  let html = '<div class="section-label">내 루틴</div>';
+
+  if (!routine.splits.length) {
+    html += '<div class="empty-msg" style="padding:20px 0;">루틴이 없어요<br>아래에서 분할을 추가해보세요</div>';
+  }
+
+  routine.splits.forEach((split, si) => {
+    const color = COLORS[si % COLORS.length];
+    const expanded = expandedSplit === si;
+    let body = '';
+    if (expanded) {
+      const exRows = split.exercises.map((ex, ei) =>
+        `<div class="split-ex-row">
+          <div class="split-ex-name">${ex.name}</div>
+          <div class="split-ex-info">${ex.sets}세트 × ${ex.reps}회${ex.weight ? ' / ' + ex.weight + 'kg' : ''}</div>
+          <button class="del-btn" onclick="deleteExercise(${si},${ei})">삭제</button>
+        </div>`).join('');
+      body = `<div class="split-body">
+        ${exRows}
+        <div class="add-ex-row">
+          <input class="r-input nm" id="exn-${si}" placeholder="운동명" />
+          <input class="r-input n" id="exs-${si}" type="number" placeholder="세트" value="4" />
+          <input class="r-input n" id="exr-${si}" type="number" placeholder="횟수" value="10" />
+          <input class="r-input n" id="exw-${si}" type="number" placeholder="kg" />
+          <button class="r-add-btn" onclick="addExercise(${si})">추가</button>
+        </div>
+        <div class="del-split-row">
+          <button class="del-btn" style="width:100%;padding:9px;" onclick="deleteSplit(${si})">이 분할 삭제</button>
+        </div>
+      </div>`;
+    }
+    html += `<div class="split-card">
+      <div class="split-card-head" onclick="toggleSplit(${si})">
+        <div class="split-card-name"><div class="split-dot" style="background:${color}"></div>${split.name}</div>
+        <div class="split-card-meta">${split.exercises.length}개 운동 ${expanded?'▲':'▼'}</div>
+      </div>
+      ${body}
+    </div>`;
+  });
+
+  html += `<div>
+    <div class="section-label" style="margin-top:20px;">분할 추가</div>
+    <div style="display:flex;gap:8px;">
+      <input class="r-input" id="new-split-name" placeholder="분할명 (예: 가슴데이)" style="flex:1;" />
+      <button class="r-add-btn" onclick="addSplit()">추가</button>
+    </div>
+  </div>`;
+
+  wrap.innerHTML = html;
+}
+
+function toggleSplit(si) { expandedSplit = expandedSplit === si ? null : si; renderRoutine(); }
+
+function addSplit() {
+  const name = document.getElementById('new-split-name').value.trim();
+  if (!name) return;
+  routine.splits.push({ name, exercises: [] });
+  expandedSplit = routine.splits.length - 1;
+  saveRoutineLocal();
+  syncRoutine();
+  renderRoutine();
+}
+
+function deleteSplit(si) {
+  if (!confirm(`'${routine.splits[si].name}' 분할을 삭제할까요?`)) return;
+  routine.splits.splice(si, 1);
+  expandedSplit = null;
+  saveRoutineLocal();
+  syncRoutine();
+  renderRoutine();
+}
+
+function addExercise(si) {
+  const name = document.getElementById(`exn-${si}`).value.trim();
+  const sets = parseInt(document.getElementById(`exs-${si}`).value) || 4;
+  const reps = parseInt(document.getElementById(`exr-${si}`).value) || 10;
+  const weight = parseFloat(document.getElementById(`exw-${si}`).value) || 0;
+  if (!name) return;
+  routine.splits[si].exercises.push({ name, sets, reps, weight });
+  saveRoutineLocal();
+  syncRoutine();
+  renderRoutine();
+}
+
+function deleteExercise(si, ei) {
+  routine.splits[si].exercises.splice(ei, 1);
+  saveRoutineLocal();
+  syncRoutine();
+  renderRoutine();
+}
+
+// ── GAS 동기화 ──
+async function syncRoutine() {
+  if (!apiUrl || !currentUser) return;
+  try {
+    fetch(apiUrl + '?action=saveRoutine&user=' + encodeURIComponent(currentUser) + '&data=' + encodeURIComponent(JSON.stringify(routine)), { mode: 'no-cors' });
+  } catch(e) {}
+}
+
+async function syncRecord(key) {
+  if (!apiUrl || !currentUser) return;
+  const rec = records[key];
+  if (!rec) return;
+  try {
+    fetch(apiUrl + '?action=saveRecord&user=' + encodeURIComponent(currentUser) + '&date=' + encodeURIComponent(key) + '&split=' + encodeURIComponent(rec.split) + '&data=' + encodeURIComponent(JSON.stringify(rec)), { mode: 'no-cors' });
+  } catch(e) {}
+}
+
+async function syncFromRemote() {
+  if (!apiUrl || !currentUser) return;
+  setSyncDot('syncing');
+  try {
+    const res = await fetch(apiUrl + '?action=getAll&user=' + encodeURIComponent(currentUser));
+    const json = await res.json();
+    if (json.routine) { try { routine = JSON.parse(json.routine); saveRoutineLocal(); } catch(e) {} }
+    if (json.records) { Object.assign(records, json.records); saveRecords(); }
+    setSyncDot('ok');
+  } catch(e) { setSyncDot('error'); }
+}
+
+// ── 초기화 ──
+loadAll();
+if (currentUser) enterMain();
+document.getElementById('nickname-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') register(); });
+</script>
+
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+</script>
+</body>
+</html>

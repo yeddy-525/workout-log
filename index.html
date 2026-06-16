@@ -1025,6 +1025,10 @@ async function syncFromRemote() {
     if (json.routine) { try { routine = JSON.parse(json.routine); saveRoutineLocal(); } catch(e) {} }
     if (json.records) { Object.assign(records, json.records); saveRecords(); }
     setSyncDot('ok');
+    const active = document.querySelector('.tab-content.active');
+    if (active?.id === 'tab-today') renderToday();
+    else if (active?.id === 'tab-calendar') renderCalendar();
+    else if (active?.id === 'tab-routine') renderRoutine();
   } catch(e) { setSyncDot('error'); }
   loadExerciseDB();
 }

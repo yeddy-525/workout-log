@@ -258,16 +258,6 @@
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbz7DmXihUcX7R5ImZgBo0tXAKXtbyp_2PzOR4zHsO_JD0MfJO-BdrBEIF2ySwPyPeTa/exec';
 const COLORS = ['#2563EB','#16A34A','#DC2626','#EA580C','#7C3AED','#0891B2','#DB2777','#65A30D'];
-const EXERCISE_DB = {
-  '가슴': ['벤치프레스','인클라인 벤치프레스','딥스','덤벨 플라이','케이블 크로스오버','펙덱 플라이','푸시업','인클라인 덤벨 플라이'],
-  '등': ['데드리프트','랫풀다운','바벨 로우','덤벨 로우','시티드 케이블 로우','풀업','티바 로우','원암 덤벨 로우','페이스풀'],
-  '어깨': ['밀리터리 프레스','덤벨 숄더프레스','사이드 레터럴 레이즈','프론트 레이즈','리어 델트 플라이','아놀드 프레스','업라이트 로우','케이블 레터럴 레이즈'],
-  '이두': ['바벨 컬','덤벨 컬','해머 컬','케이블 컬','인클라인 덤벨 컬','컨센트레이션 컬','프리처 컬'],
-  '삼두': ['트라이셉스 푸시다운','라잉 트라이셉스 익스텐션','오버헤드 익스텐션','딥스','킥백','클로즈그립 벤치프레스'],
-  '하체': ['스쿼트','레그프레스','레그 익스텐션','레그 컬','런지','불가리안 스플릿 스쿼트','힙 쓰러스트','카프 레이즈','루마니안 데드리프트','핵 스쿼트'],
-  '복근': ['크런치','레그레이즈','플랭크','케이블 크런치','싯업','AB 롤아웃','바이시클 크런치'],
-  '유산소': ['러닝머신','사이클','로잉머신','버피','줄넘기','스텝밀'],
-};
 
 let currentUser = null;
 let routine = { splits: [] };
@@ -348,12 +338,22 @@ function deactivateAdmin() {
 function openExPicker(si) {
   pickerTargetSplit = si;
   const content = document.getElementById('ex-picker-content');
-  content.innerHTML = Object.entries(EXERCISE_DB).map(([cat, exs]) =>
-    `<div class="picker-cat-name">${cat}</div>
-     <div class="picker-ex-list">${exs.map(name =>
-       `<button class="picker-ex-btn" onclick="pickExercise('${name.replace(/'/g,"\\'")}')"> ${name}</button>`
-     ).join('')}</div>`
-  ).join('');
+  if (!gasExercises.length) {
+    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">운동DB를 불러오는 중이에요<br>GAS URL이 설정되어 있는지 확인해주세요</div>';
+  } else {
+    const byCategory = {};
+    gasExercises.forEach(e => {
+      const cat = e.category || '기타';
+      if (!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push(e.name);
+    });
+    content.innerHTML = Object.entries(byCategory).map(([cat, exs]) =>
+      `<div class="picker-cat-name">${cat}</div>
+       <div class="picker-ex-list">${exs.map(name =>
+         `<button class="picker-ex-btn" onclick="pickExercise('${name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}'">${name}</button>`
+       ).join('')}</div>`
+    ).join('');
+  }
   document.getElementById('ex-picker-modal').classList.add('show');
 }
 
@@ -372,9 +372,7 @@ function pickExercise(name) {
 
 // ── 운동 자동완성 ──
 function getAllExerciseNames() {
-  const fromGas = gasExercises.map(e => e.name);
-  const fromHardcoded = Object.values(EXERCISE_DB).flat();
-  return [...new Set([...fromGas, ...fromHardcoded])];
+  return gasExercises.map(e => e.name);
 }
 
 function updateSuggestions(si) {

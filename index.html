@@ -374,6 +374,25 @@ function deactivateAdmin() {
   renderRoutine();
 }
 
+function showAdminCodeInRoutine() {
+  const wrap = document.getElementById('routine-admin-wrap');
+  if (!wrap) return;
+  wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+  if (wrap.style.display !== 'none') document.getElementById('routine-admin-code')?.focus();
+}
+
+function verifyAdminCodeInRoutine() {
+  const code = document.getElementById('routine-admin-code')?.value;
+  if (code === '0525') {
+    localStorage.setItem('workout_is_admin', '1');
+    isAdmin = true;
+    renderRoutine();
+  } else {
+    alert('코드가 틀렸어요');
+    document.getElementById('routine-admin-code').value = '';
+  }
+}
+
 // ── 운동 DB 피커 ──
 function openExPicker(target) {
   pickerTargetSplit = target;
@@ -899,6 +918,18 @@ function renderRoutine() {
       </div>
     </div>`;
   }
+
+  html += `<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+    <button onclick="changeUser()" style="width:100%;padding:11px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);margin-bottom:8px;">사용자 변경</button>
+    ${isAdmin
+      ? `<button onclick="deactivateAdmin()" style="width:100%;padding:11px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);">관리자 모드 해제</button>`
+      : `<button onclick="showAdminCodeInRoutine()" style="width:100%;padding:11px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);">🔐 관리자 모드</button>
+         <div id="routine-admin-wrap" style="display:none;margin-top:8px;">
+           <input class="r-input" id="routine-admin-code" placeholder="관리자 코드" type="password" maxlength="10" style="width:100%;margin-bottom:8px;" />
+           <button class="r-add-btn" style="width:100%;" onclick="verifyAdminCodeInRoutine()">확인</button>
+         </div>`
+    }
+  </div>`;
 
   wrap.innerHTML = html;
 }

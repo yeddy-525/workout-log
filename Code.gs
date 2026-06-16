@@ -83,9 +83,8 @@ function getAll_(user) {
 function getExerciseDB_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('운동DB');
-  if (!sheet) {
-    sheet = ss.insertSheet('운동DB');
-    sheet.appendRow(['name', 'category']);
+  if (!sheet) { sheet = ss.insertSheet('운동DB'); sheet.appendRow(['name', 'category']); }
+  if (sheet.getLastRow() <= 1) {
     const defaults = [
       ['벤치프레스','가슴'],['인클라인 벤치프레스','가슴'],['딥스','가슴'],['덤벨 플라이','가슴'],['케이블 크로스오버','가슴'],['펙덱 플라이','가슴'],['푸시업','가슴'],['인클라인 덤벨 플라이','가슴'],
       ['데드리프트','등'],['랫풀다운','등'],['바벨 로우','등'],['덤벨 로우','등'],['시티드 케이블 로우','등'],['풀업','등'],['티바 로우','등'],['원암 덤벨 로우','등'],['페이스풀','등'],

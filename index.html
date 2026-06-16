@@ -208,6 +208,7 @@
           <input class="r-input n" id="today-ex-sets" type="number" placeholder="세트" value="3" />
           <input class="r-input n" id="today-ex-reps" type="number" placeholder="회" value="10" />
           <input class="r-input n" id="today-ex-weight" type="number" placeholder="kg" />
+          <input class="r-input n" id="today-ex-rest" type="number" placeholder="휴식(초)" value="60" />
           <button class="r-add-btn" onclick="addTodayExercise()">추가</button>
         </div>
       </div>
@@ -269,12 +270,12 @@
 <div id="timer-sheet" class="timer-sheet">
   <div class="timer-handle"></div>
   <div class="timer-label" id="timer-label">휴식 중 🛌</div>
-  <div class="timer-count" id="timer-count">90</div>
+  <div class="timer-count" id="timer-count">60</div>
   <div class="timer-presets">
-    <button class="timer-preset" onclick="setTimerDuration(60)">1분</button>
-    <button class="timer-preset active" onclick="setTimerDuration(90)">1분 30초</button>
-    <button class="timer-preset" onclick="setTimerDuration(120)">2분</button>
-    <button class="timer-preset" onclick="setTimerDuration(180)">3분</button>
+    <button class="timer-preset active" data-sec="60" onclick="setTimerDuration(60)">1분</button>
+    <button class="timer-preset" data-sec="90" onclick="setTimerDuration(90)">1분 30초</button>
+    <button class="timer-preset" data-sec="120" onclick="setTimerDuration(120)">2분</button>
+    <button class="timer-preset" data-sec="180" onclick="setTimerDuration(180)">3분</button>
   </div>
   <div class="timer-btns">
     <button class="timer-skip" onclick="skipTimer()">건너뛰기</button>
@@ -292,7 +293,7 @@ let records = {};
 let expandedEx = null;
 let expandedSplit = null;
 let calOffset = 0;
-let timerDuration = 90;
+let timerDuration = 60;
 let timerRemaining = 0;
 let timerInterval = null;
 let apiUrl = localStorage.getItem('workout_api_url') || API_URL;
@@ -441,12 +442,13 @@ function addTodayExercise() {
   const sets = parseInt(document.getElementById('today-ex-sets').value) || 3;
   const reps = parseInt(document.getElementById('today-ex-reps').value) || 10;
   const weight = parseFloat(document.getElementById('today-ex-weight').value) || 0;
+  const rest = parseInt(document.getElementById('today-ex-rest').value) || 60;
   if (!name) { document.getElementById('today-ex-name').focus(); return; }
   const key = todayStr();
   if (!records[key]) records[key] = {};
   if (!records[key].split) records[key].split = '직접';
   if (!records[key].exercises) records[key].exercises = [];
-  records[key].exercises.push({ name, sets: Array.from({length: sets}, () => ({weight, reps, done: false})) });
+  records[key].exercises.push({ name, sets: Array.from({length: sets}, () => ({weight, reps, done: false})), rest });
   document.getElementById('today-ex-name').value = '';
   document.getElementById('today-ex-sug').innerHTML = '';
   document.getElementById('today-ex-weight').value = '';
@@ -651,8 +653,8 @@ function toggleSet(ei, si) {
   set.done = !set.done;
   saveRecords();
   if (set.done) {
-    startTimer();
     const ex = rec.exercises[ei];
+    startTimer(ex.rest || 60);
     if (ex.sets.every(s => s.done) && ei + 1 < rec.exercises.length) {
       expandedEx = ei + 1;
     }
@@ -666,8 +668,12 @@ function finishWorkout() {
 }
 
 // ── 타이머 ──
-function startTimer() {
+function startTimer(duration) {
+  if (duration) timerDuration = duration;
   timerRemaining = timerDuration;
+  document.querySelectorAll('.timer-preset').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.sec) === timerDuration);
+  });
   document.getElementById('timer-sheet').classList.add('show');
   document.getElementById('page-main').style.paddingBottom = '250px';
   clearInterval(timerInterval);
@@ -787,7 +793,7 @@ function renderRoutine() {
       const exRows = split.exercises.map((ex, ei) =>
         `<div class="split-ex-row">
           <div class="split-ex-name">${ex.name}</div>
-          <div class="split-ex-info">${ex.sets}세트 × ${ex.reps}회${ex.weight ? ' / ' + ex.weight + 'kg' : ''}</div>
+          <div class="split-ex-info">${ex.sets}세트 × ${ex.reps}회${ex.weight ? ' / ' + ex.weight + 'kg' : ''} / 휴식 ${ex.rest || 60}초</div>
           <button class="del-btn" onclick="deleteExercise(${si},${ei})">삭제</button>
         </div>`).join('');
       body = `<div class="split-body">
@@ -801,6 +807,7 @@ function renderRoutine() {
           <input class="r-input n" id="exs-${si}" type="number" placeholder="세트" value="4" />
           <input class="r-input n" id="exr-${si}" type="number" placeholder="횟수" value="10" />
           <input class="r-input n" id="exw-${si}" type="number" placeholder="kg" />
+          <input class="r-input n" id="exrt-${si}" type="number" placeholder="휴식(초)" value="60" />
           <button class="r-add-btn" onclick="addExercise(${si})">추가</button>
         </div>
         <div class="del-split-row">
@@ -868,8 +875,9 @@ function addExercise(si) {
   const sets = parseInt(document.getElementById(`exs-${si}`).value) || 4;
   const reps = parseInt(document.getElementById(`exr-${si}`).value) || 10;
   const weight = parseFloat(document.getElementById(`exw-${si}`).value) || 0;
+  const rest = parseInt(document.getElementById(`exrt-${si}`).value) || 60;
   if (!name) return;
-  routine.splits[si].exercises.push({ name, sets, reps, weight });
+  routine.splits[si].exercises.push({ name, sets, reps, weight, rest });
   saveRoutineLocal();
   syncRoutine();
   renderRoutine();

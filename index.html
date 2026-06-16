@@ -526,7 +526,7 @@ function renderMeals() {
   document.getElementById('meal-wrap').innerHTML = items.map(m =>
     `<div class="meal-card">
       <div class="meal-label">${m.label}</div>
-      <textarea class="meal-textarea" placeholder="오늘 뭐 먹었어?" onblur="saveMeal('${m.key}',this.value)">${meals[m.key] || ''}</textarea>
+      <textarea class="meal-textarea" data-meal="${m.key}" placeholder="오늘 뭐 먹었어?" onblur="saveMeal('${m.key}',this.value)">${meals[m.key] || ''}</textarea>
     </div>`
   ).join('');
 }
@@ -713,6 +713,9 @@ function finishWorkout() {
 }
 
 function saveAll() {
+  document.querySelectorAll('.meal-textarea[data-meal]').forEach(ta => {
+    saveMeal(ta.dataset.meal, ta.value);
+  });
   setSyncDot('syncing');
   const btn = document.getElementById('save-btn');
   btn.textContent = '저장 중...';

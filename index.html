@@ -134,6 +134,8 @@
     .r-add-btn{padding:8px 14px;background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
     .add-split-btn{width:100%;padding:13px;background:var(--blue-lt);color:var(--blue-dk);border:1.5px dashed var(--blue);border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;}
     .del-split-row{margin-top:4px;}
+    .ex-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 2px;min-height:0;}
+    .ex-sug-chip{padding:6px 13px;border-radius:20px;border:1.5px solid var(--blue);background:var(--blue-lt);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--blue-dk);white-space:nowrap;}
 
     /* 운동 선택 모달 */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;}
@@ -279,6 +281,8 @@ let timerInterval = null;
 let apiUrl = localStorage.getItem('workout_api_url') || API_URL;
 let isAdmin = localStorage.getItem('workout_is_admin') === '1';
 let pickerTargetSplit = null;
+let gasExercises = [];
+try { gasExercises = JSON.parse(localStorage.getItem('workout_exercise_db') || '[]'); } catch(e) {}
 
 // ── 유틸 ──
 function dateStr(d) {
@@ -364,6 +368,32 @@ function pickExercise(name) {
   if (si === null) return;
   const input = document.getElementById(`exn-${si}`);
   if (input) { input.value = name; input.focus(); }
+}
+
+// ── 운동 자동완성 ──
+function getAllExerciseNames() {
+  const fromGas = gasExercises.map(e => e.name);
+  const fromHardcoded = Object.values(EXERCISE_DB).flat();
+  return [...new Set([...fromGas, ...fromHardcoded])];
+}
+
+function updateSuggestions(si) {
+  const input = document.getElementById(`exn-${si}`);
+  const el = document.getElementById(`ex-sug-${si}`);
+  if (!input || !el) return;
+  const q = input.value.trim();
+  if (!q) { el.innerHTML = ''; return; }
+  const matches = getAllExerciseNames().filter(n => n.includes(q)).slice(0, 10);
+  el.innerHTML = matches.map(name =>
+    `<button class="ex-sug-chip" onclick="selectSuggestion(${si},'${name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${name}</button>`
+  ).join('');
+}
+
+function selectSuggestion(si, name) {
+  const input = document.getElementById(`exn-${si}`);
+  if (input) input.value = name;
+  const el = document.getElementById(`ex-sug-${si}`);
+  if (el) el.innerHTML = '';
 }
 
 // ── 진입 ──
@@ -656,9 +686,10 @@ function renderRoutine() {
       body = `<div class="split-body">
         ${exRows}
         <div class="add-ex-row">
-          <input class="r-input nm" id="exn-${si}" placeholder="운동명 직접 입력" />
+          <input class="r-input nm" id="exn-${si}" placeholder="운동명 입력 또는 검색" oninput="updateSuggestions(${si})" autocomplete="off" />
           <button class="r-add-btn" style="background:var(--muted);flex-shrink:0;" onclick="openExPicker(${si})">목록</button>
         </div>
+        <div class="ex-suggestions" id="ex-sug-${si}"></div>
         <div class="add-ex-row" style="margin-top:4px;">
           <input class="r-input n" id="exs-${si}" type="number" placeholder="세트" value="4" />
           <input class="r-input n" id="exr-${si}" type="number" placeholder="횟수" value="10" />
@@ -788,6 +819,19 @@ async function syncFromRemote() {
     if (json.records) { Object.assign(records, json.records); saveRecords(); }
     setSyncDot('ok');
   } catch(e) { setSyncDot('error'); }
+  loadExerciseDB();
+}
+
+async function loadExerciseDB() {
+  if (!apiUrl) return;
+  try {
+    const res = await fetch(apiUrl + '?action=getExerciseDB');
+    const json = await res.json();
+    if (json.ok && json.exercises?.length) {
+      gasExercises = json.exercises;
+      localStorage.setItem('workout_exercise_db', JSON.stringify(gasExercises));
+    }
+  } catch(e) {}
 }
 
 // ── 초기화 ──

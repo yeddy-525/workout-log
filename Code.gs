@@ -10,6 +10,8 @@ function doGet(e) {
       output.setContent(JSON.stringify(saveRecord_(user, e.parameter.date, e.parameter.split, e.parameter.data)));
     } else if (action === 'getAll') {
       output.setContent(JSON.stringify(getAll_(user)));
+    } else if (action === 'getExerciseDB') {
+      output.setContent(JSON.stringify(getExerciseDB_()));
     } else {
       output.setContent(JSON.stringify({ error: 'unknown action' }));
     }
@@ -76,4 +78,20 @@ function getAll_(user) {
     }
   }
   return { ok: true, routine, records };
+}
+
+function getExerciseDB_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('운동DB');
+  if (!sheet) {
+    sheet = ss.insertSheet('운동DB');
+    sheet.appendRow(['name', 'category']);
+    return { ok: true, exercises: [] };
+  }
+  const rows = sheet.getDataRange().getValues();
+  const exercises = [];
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0]) exercises.push({ name: String(rows[i][0]), category: String(rows[i][1] || '') });
+  }
+  return { ok: true, exercises };
 }

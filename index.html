@@ -29,6 +29,7 @@
     .intro-input{width:100%;max-width:320px;padding:14px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:16px;font-family:inherit;outline:none;background:white;margin-bottom:12px;}
     .intro-input:focus{border-color:var(--blue);}
     .intro-btn{width:100%;max-width:320px;padding:15px;background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;}
+    .admin-link{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;text-decoration:underline;}
 
     /* 메인 */
     #page-main{padding-bottom:70px;}
@@ -145,6 +146,13 @@
     <div class="intro-sub">나만의 루틴을 기록해요</div>
     <input class="intro-input" id="nickname-input" placeholder="닉네임을 입력해주세요" maxlength="10" />
     <button class="intro-btn" onclick="register()">시작하기</button>
+    <div id="admin-entry" style="margin-top:16px;width:100%;max-width:320px;text-align:center;">
+      <button class="admin-link" onclick="toggleAdminEntry()">🔐 관리자 모드</button>
+      <div id="admin-code-wrap" style="display:none;margin-top:10px;">
+        <input class="intro-input" id="admin-code-input" placeholder="관리자 코드" maxlength="10" type="password" style="margin-bottom:8px;" />
+        <button class="intro-btn" style="background:var(--text);" onclick="verifyAdminCode()">확인</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -235,6 +243,7 @@ let timerDuration = 90;
 let timerRemaining = 0;
 let timerInterval = null;
 let apiUrl = localStorage.getItem('workout_api_url') || API_URL;
+let isAdmin = localStorage.getItem('workout_is_admin') === '1';
 
 // ── 유틸 ──
 function dateStr(d) {
@@ -264,6 +273,36 @@ function register() {
   localStorage.setItem('workout_user', name);
   currentUser = name;
   enterMain();
+}
+
+function toggleAdminEntry() {
+  const wrap = document.getElementById('admin-code-wrap');
+  const show = wrap.style.display === 'none';
+  wrap.style.display = show ? 'block' : 'none';
+  if (show) document.getElementById('admin-code-input').focus();
+}
+
+function verifyAdminCode() {
+  const code = document.getElementById('admin-code-input').value;
+  if (code === '0525') {
+    localStorage.setItem('workout_is_admin', '1');
+    isAdmin = true;
+    document.getElementById('admin-code-wrap').style.display = 'none';
+    document.getElementById('admin-code-input').value = '';
+    const name = document.getElementById('nickname-input').value.trim();
+    if (name) register();
+    else document.getElementById('nickname-input').focus();
+  } else {
+    alert('코드가 틀렸어요');
+    document.getElementById('admin-code-input').value = '';
+  }
+}
+
+function deactivateAdmin() {
+  if (!confirm('관리자 모드를 해제할까요?')) return;
+  localStorage.removeItem('workout_is_admin');
+  isAdmin = false;
+  renderRoutine();
 }
 
 // ── 진입 ──
@@ -576,16 +615,21 @@ function renderRoutine() {
       <input class="r-input" id="new-split-name" placeholder="분할명 (예: 가슴데이)" style="flex:1;" />
       <button class="r-add-btn" onclick="addSplit()">추가</button>
     </div>
-  </div>
-  <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
-    <div class="section-label">앱 설정</div>
-    <div style="margin-bottom:8px;font-size:13px;color:var(--muted);">Google Apps Script URL</div>
-    <input class="r-input" id="gas-url-input" placeholder="https://script.google.com/macros/s/..." value="${apiUrl}" style="width:100%;font-size:11px;font-family:monospace;margin-bottom:8px;" />
-    <button class="r-add-btn" style="width:100%;" onclick="saveApiUrl()">저장</button>
-    <div id="api-url-result" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
-    <div style="margin-top:16px;font-size:13px;color:var(--muted);">사용자 변경</div>
-    <button onclick="changeUser()" style="margin-top:6px;width:100%;padding:10px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);">다른 닉네임으로 시작</button>
   </div>`;
+  if (isAdmin) {
+    html += `<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+      <div class="section-label">앱 설정 🔐</div>
+      <div style="margin-bottom:8px;font-size:13px;color:var(--muted);">Google Apps Script URL</div>
+      <input class="r-input" id="gas-url-input" placeholder="https://script.google.com/macros/s/..." value="${apiUrl}" style="width:100%;font-size:11px;font-family:monospace;margin-bottom:8px;" />
+      <button class="r-add-btn" style="width:100%;" onclick="saveApiUrl()">저장</button>
+      <div id="api-url-result" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
+      <div style="margin-top:16px;font-size:13px;color:var(--muted);">사용자 변경</div>
+      <button onclick="changeUser()" style="margin-top:6px;width:100%;padding:10px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);">다른 닉네임으로 시작</button>
+      <div style="margin-top:12px;">
+        <button onclick="deactivateAdmin()" style="width:100%;padding:10px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);">관리자 모드 해제</button>
+      </div>
+    </div>`;
+  }
 
   wrap.innerHTML = html;
 }
@@ -680,6 +724,7 @@ async function syncFromRemote() {
 loadAll();
 if (currentUser) enterMain();
 document.getElementById('nickname-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') register(); });
+document.getElementById('admin-code-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') verifyAdminCode(); });
 </script>
 
 <script>

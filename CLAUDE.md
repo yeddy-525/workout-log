@@ -18,12 +18,27 @@
 - GAS actions: `saveRoutine`, `saveRecord`, `getAll`, `getExerciseDB`
 - Google Sheets 시트: `루틴`, `기록`, `운동DB`
 - `운동DB` 시트: A열 name, B열 category — 처음 호출 시 기본 운동 자동 씨딩
+- `cleanupRecords()` — GAS 에디터에서 수동 실행, 기록 시트 중복 행 제거
+
+## GAS 알려진 이슈
+- Google Sheets가 날짜 문자열("2026-06-16")을 Date 객체로 자동 변환함
+- `dateToKey_()` 함수로 `Asia/Seoul` 기준 포맷 복원
+- 프론트에서도 `syncFromRemote` 시 날짜 키를 `YYYY-MM-DD`로 정규화 (방어 처리)
 
 ## 관리자 모드
 - 코드: `0525`
 - 진입 방법 2곳: ① 인트로 페이지 하단 `🔐 관리자 모드` ② 루틴 탭 맨 아래 `🔐 관리자 모드`
 - localStorage `workout_is_admin=1` 저장
 - 관리자만 루틴 탭에서 앱 설정(GAS URL) 접근 가능
+
+## 반응형
+- 520px 이상(PC)에서 480px 너비 중앙 카드 형태로 표시
+- bottom-nav, FAB, 타이머, 모달 모두 카드 안에 정렬
+
+## 동기화 로직
+- 앱 진입 시 `syncFromRemote()` → GAS에서 루틴+기록 불러와 localStorage 저장 후 현재 탭 재렌더링
+- 저장 FAB 클릭 시: 식단 textarea 값 먼저 flush → `syncRoutine()` + `syncRecord()` 호출
+- 식단 textarea `onblur`에도 즉시 저장
 
 ## 주요 기능
 

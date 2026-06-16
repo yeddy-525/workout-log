@@ -165,6 +165,16 @@
     .picker-ex-list{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px;}
     .picker-ex-btn{padding:8px 16px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--text);}
     .picker-ex-btn:active{background:var(--blue-lt);border-color:var(--blue);color:var(--blue-dk);}
+
+    /* ── PC 반응형: 앱 프레임 ── */
+    @media (min-width: 520px) {
+      body { background: #D1D5DB; display: flex; justify-content: center; }
+      .page { max-width: 480px; width: 100%; margin: 0 auto; box-shadow: 0 0 0 1px rgba(0,0,0,.07), 0 8px 40px rgba(0,0,0,.15); min-height: 100vh; background: var(--bg); }
+      .bottom-nav { max-width: 480px; left: 50%; margin-left: -240px; }
+      .fab-save { right: calc(50% - 224px); }
+      .timer-sheet { max-width: 480px; left: 50%; margin-left: -240px; }
+      .modal-sheet { max-width: 480px; margin: 0 auto; }
+    }
   </style>
 </head>
 <body>

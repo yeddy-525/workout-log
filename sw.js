@@ -1,5 +1,5 @@
-const CACHE = 'workout-v1';
-const ASSETS = ['./', './index.html'];
+const CACHE = 'workout-v2';
+const ASSETS = ['./', './index.html', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, {cache:'reload'})))));

@@ -137,6 +137,12 @@
     .del-split-row{margin-top:4px;}
     .ex-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 2px;min-height:0;}
     .ex-sug-chip{padding:6px 13px;border-radius:20px;border:1.5px solid var(--blue);background:var(--blue-lt);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--blue-dk);white-space:nowrap;}
+    .today-add-btn{width:100%;padding:11px;background:white;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);}
+    .meal-section{padding:16px 16px 24px;border-top:1px solid var(--border);margin-top:8px;}
+    .meal-card{background:white;border-radius:var(--radius);border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;}
+    .meal-label{font-size:13px;font-weight:700;margin-bottom:6px;}
+    .meal-textarea{width:100%;border:none;outline:none;font-family:inherit;font-size:14px;resize:none;min-height:48px;color:var(--text);line-height:1.6;background:transparent;}
+    .meal-textarea::placeholder{color:var(--muted);}
 
     /* 운동 선택 모달 */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;}
@@ -190,7 +196,27 @@
     </div>
     <div class="split-selector" id="split-selector"></div>
     <div class="exercise-section" id="exercise-section"></div>
+    <div id="today-add-wrap" style="padding:0 16px 4px;display:none;">
+      <button class="today-add-btn" id="today-add-toggle" onclick="toggleTodayAddForm()">+ 운동 직접 추가</button>
+      <div id="today-add-form" style="display:none;background:white;border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-top:6px;">
+        <div style="display:flex;gap:6px;">
+          <input class="r-input nm" id="today-ex-name" placeholder="운동명 입력 또는 검색" oninput="updateTodaySuggest()" autocomplete="off" />
+          <button class="r-add-btn" style="background:var(--muted);flex-shrink:0;" onclick="openExPicker('today')">목록</button>
+        </div>
+        <div class="ex-suggestions" id="today-ex-sug"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <input class="r-input n" id="today-ex-sets" type="number" placeholder="세트" value="3" />
+          <input class="r-input n" id="today-ex-reps" type="number" placeholder="회" value="10" />
+          <input class="r-input n" id="today-ex-weight" type="number" placeholder="kg" />
+          <button class="r-add-btn" onclick="addTodayExercise()">추가</button>
+        </div>
+      </div>
+    </div>
     <button class="finish-btn" id="finish-btn" onclick="finishWorkout()" style="display:none;">운동 완료 💪</button>
+    <div class="meal-section">
+      <div class="section-label" style="margin-top:0;">식단 기록</div>
+      <div id="meal-wrap"></div>
+    </div>
   </div>
 
   <!-- 캘린더 탭 -->
@@ -336,8 +362,8 @@ function deactivateAdmin() {
 }
 
 // ── 운동 DB 피커 ──
-function openExPicker(si) {
-  pickerTargetSplit = si;
+function openExPicker(target) {
+  pickerTargetSplit = target;
   const content = document.getElementById('ex-picker-content');
   if (!gasExercises.length) {
     content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;">운동DB를 불러오는 중이에요<br>GAS URL이 설정되어 있는지 확인해주세요</div>';
@@ -364,11 +390,16 @@ function closeExPicker() {
 }
 
 function pickExercise(name) {
-  const si = pickerTargetSplit;
+  const target = pickerTargetSplit;
   closeExPicker();
-  if (si === null) return;
-  const input = document.getElementById(`exn-${si}`);
-  if (input) { input.value = name; input.focus(); }
+  if (target === null) return;
+  if (target === 'today') {
+    const input = document.getElementById('today-ex-name');
+    if (input) { input.value = name; input.focus(); }
+  } else {
+    const input = document.getElementById(`exn-${target}`);
+    if (input) { input.value = name; input.focus(); }
+  }
 }
 
 // ── 운동 자동완성 ──
@@ -393,6 +424,76 @@ function selectSuggestion(si, name) {
   if (input) input.value = name;
   const el = document.getElementById(`ex-sug-${si}`);
   if (el) el.innerHTML = '';
+}
+
+// ── 오늘 직접 추가 ──
+function toggleTodayAddForm() {
+  const form = document.getElementById('today-add-form');
+  const btn = document.getElementById('today-add-toggle');
+  const show = form.style.display === 'none';
+  form.style.display = show ? 'block' : 'none';
+  btn.textContent = show ? '▲ 닫기' : '+ 운동 직접 추가';
+  if (show) document.getElementById('today-ex-name').focus();
+}
+
+function addTodayExercise() {
+  const name = document.getElementById('today-ex-name').value.trim();
+  const sets = parseInt(document.getElementById('today-ex-sets').value) || 3;
+  const reps = parseInt(document.getElementById('today-ex-reps').value) || 10;
+  const weight = parseFloat(document.getElementById('today-ex-weight').value) || 0;
+  if (!name) { document.getElementById('today-ex-name').focus(); return; }
+  const key = todayStr();
+  if (!records[key]) records[key] = {};
+  if (!records[key].split) records[key].split = '직접';
+  if (!records[key].exercises) records[key].exercises = [];
+  records[key].exercises.push({ name, sets: Array.from({length: sets}, () => ({weight, reps, done: false})) });
+  document.getElementById('today-ex-name').value = '';
+  document.getElementById('today-ex-sug').innerHTML = '';
+  document.getElementById('today-ex-weight').value = '';
+  saveRecords();
+  syncRecord(key);
+  renderToday();
+}
+
+function updateTodaySuggest() {
+  const q = document.getElementById('today-ex-name').value.trim();
+  const el = document.getElementById('today-ex-sug');
+  if (!q) { el.innerHTML = ''; return; }
+  const matches = getAllExerciseNames().filter(n => n.includes(q)).slice(0, 8);
+  el.innerHTML = matches.map(name =>
+    `<button class="ex-sug-chip" onclick="selectTodaySuggest('${name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${name}</button>`
+  ).join('');
+}
+
+function selectTodaySuggest(name) {
+  document.getElementById('today-ex-name').value = name;
+  document.getElementById('today-ex-sug').innerHTML = '';
+}
+
+// ── 식단 기록 ──
+function renderMeals() {
+  const rec = records[todayStr()] || {};
+  const meals = rec.meals || {};
+  const items = [
+    { key: 'breakfast', label: '🌅 아침' },
+    { key: 'lunch',     label: '☀️ 점심' },
+    { key: 'dinner',    label: '🌙 저녁' },
+  ];
+  document.getElementById('meal-wrap').innerHTML = items.map(m =>
+    `<div class="meal-card">
+      <div class="meal-label">${m.label}</div>
+      <textarea class="meal-textarea" placeholder="오늘 뭐 먹었어?" onblur="saveMeal('${m.key}',this.value)">${meals[m.key] || ''}</textarea>
+    </div>`
+  ).join('');
+}
+
+function saveMeal(type, val) {
+  const key = todayStr();
+  if (!records[key]) records[key] = {};
+  if (!records[key].meals) records[key].meals = {};
+  records[key].meals[type] = val;
+  saveRecords();
+  syncRecord(key);
 }
 
 // ── 진입 ──
@@ -420,13 +521,14 @@ function renderToday() {
   const days = ['일','월','화','수','목','금','토'];
   document.getElementById('today-date').textContent = `${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]})`;
   const rec = records[todayStr()];
-  if (rec?.split) {
-    document.getElementById('today-title').textContent = rec.split === '쉬는날' ? '오늘은 쉬는 날 😴' : rec.split + ' 운동 🔥';
-  } else {
-    document.getElementById('today-title').textContent = '오늘 뭐 할 거야?';
-  }
+  const split = rec?.split;
+  if (split === '쉬는날') document.getElementById('today-title').textContent = '오늘은 쉬는 날 😴';
+  else if (split === '직접') document.getElementById('today-title').textContent = '오늘의 운동 💪';
+  else if (split) document.getElementById('today-title').textContent = split + ' 운동 🔥';
+  else document.getElementById('today-title').textContent = '오늘 뭐 할 거야?';
   renderSplitSelector();
   renderExercises();
+  renderMeals();
 }
 
 function renderSplitSelector() {
@@ -447,14 +549,16 @@ function selectSplit(name) {
   const key = todayStr();
   if (!records[key]) records[key] = {};
 
+  const meals = records[key]?.meals || {};
+
   if (name === '쉬는날') {
     if (records[key]?.split === '쉬는날') {
-      delete records[key];
+      records[key] = { meals };
       saveRecords();
       renderToday();
       return;
     }
-    records[key] = { split: '쉬는날', exercises: [] };
+    records[key] = { split: '쉬는날', exercises: [], meals };
     saveRecords();
     syncRecord(key);
     renderToday();
@@ -467,7 +571,7 @@ function selectSplit(name) {
       name: ex.name,
       sets: Array.from({length: ex.sets}, () => ({ weight: ex.weight, reps: ex.reps, done: false }))
     }));
-    records[key] = { split: name, exercises };
+    records[key] = { split: name, exercises, meals };
     saveRecords();
   }
   expandedEx = 0;
@@ -477,15 +581,19 @@ function selectSplit(name) {
 function renderExercises() {
   const container = document.getElementById('exercise-section');
   const finishBtn = document.getElementById('finish-btn');
+  const addWrap = document.getElementById('today-add-wrap');
   const rec = records[todayStr()];
 
-  if (!rec?.split || rec.split === '쉬는날') {
+  const isRest = rec?.split === '쉬는날';
+  if (addWrap) addWrap.style.display = isRest ? 'none' : 'block';
+
+  if (!rec?.split || isRest) {
     container.innerHTML = '';
     finishBtn.style.display = 'none';
     return;
   }
   if (!rec.exercises?.length) {
-    container.innerHTML = '<div class="empty-msg">이 분할에 운동이 없어요<br>루틴 탭에서 추가해주세요 ⚙️</div>';
+    container.innerHTML = '<div class="empty-msg">아직 운동이 없어요<br>아래에서 직접 추가하거나 루틴을 선택해보세요 👇</div>';
     finishBtn.style.display = 'none';
     return;
   }
@@ -838,6 +946,7 @@ loadAll();
 if (currentUser) enterMain();
 document.getElementById('nickname-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') register(); });
 document.getElementById('admin-code-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') verifyAdminCode(); });
+document.getElementById('today-ex-name')?.addEventListener('keydown', e => { if (e.key === 'Enter') addTodayExercise(); });
 </script>
 
 <script>

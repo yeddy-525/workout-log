@@ -38,9 +38,9 @@
     .header-title{font-size:18px;font-weight:800;letter-spacing:-.03em;}
     .header-user{font-size:12px;color:var(--muted);margin-top:2px;}
     .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;}
-    .header-save-btn{padding:6px 14px;background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
-    .header-save-btn:active{background:var(--blue-dk);}
-    .header-save-btn.saved{background:var(--green);}
+    .fab-save{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom) + 14px);right:16px;padding:12px 20px;background:var(--blue);color:white;border:none;border-radius:30px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(37,99,235,.4);z-index:25;}
+    .fab-save:active{background:var(--blue-dk);}
+    .fab-save.saved{background:var(--green);}
 
     /* 하단 탭바 */
     .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);display:flex;z-index:20;padding-bottom:env(safe-area-inset-bottom);}
@@ -223,9 +223,6 @@
       <div class="section-label" style="margin-top:0;">식단 기록</div>
       <div id="meal-wrap"></div>
     </div>
-    <div style="padding:8px 16px 24px;">
-      <button class="header-save-btn" id="save-btn" onclick="saveAll()" style="width:100%;padding:14px;font-size:15px;">저장</button>
-    </div>
   </div>
 
   <!-- 캘린더 탭 -->
@@ -262,6 +259,9 @@
     </button>
   </nav>
 </div>
+
+<!-- 플로팅 저장 버튼 -->
+<button class="fab-save" id="save-btn" onclick="saveAll()">저장</button>
 
 <!-- 운동 선택 모달 -->
 <div id="ex-picker-modal" class="modal-overlay" onclick="if(event.target===this)closeExPicker()">
@@ -693,8 +693,8 @@ function saveAll() {
       btn.textContent = '저장';
       btn.classList.remove('saved');
       btn.disabled = false;
-    }, 1500);
-  }, 800);
+    }, 1200);
+  }, 700);
 }
 
 // ── 타이머 ──

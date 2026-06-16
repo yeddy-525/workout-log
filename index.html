@@ -115,6 +115,10 @@
     .cal-detail-date{font-size:12px;color:var(--muted);margin-bottom:6px;}
     .cal-detail-split{font-size:18px;font-weight:700;margin-bottom:10px;}
     .cal-detail-ex{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:5px;}
+    .cal-meal-section{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
+    .cal-meal-row{display:flex;gap:8px;align-items:baseline;}
+    .cal-meal-label{font-size:12px;font-weight:700;flex-shrink:0;color:var(--text);}
+    .cal-meal-text{font-size:13px;color:var(--muted);line-height:1.5;}
 
     /* 루틴 탭 */
     .routine-wrap{padding:16px;}
@@ -777,7 +781,9 @@ function renderCalendar() {
     const tag = isWorked
       ? `<div class="cal-tag">${rec.split.slice(0,2)}</div>`
       : isRest ? '<div class="cal-tag rest">휴</div>' : '';
-    html += `<div class="${cls}" onclick="showDayDetail('${key}')"><div class="cal-num">${d}</div>${tag}</div>`;
+    const hasMeal = rec?.meals && Object.values(rec.meals).some(m => m?.trim());
+    const dot = (!isWorked && !isRest && hasMeal) ? '<div class="cal-tag" style="color:var(--muted);">식</div>' : '';
+    html += `<div class="${cls}" onclick="showDayDetail('${key}')"><div class="cal-num">${d}</div>${tag}${dot}</div>`;
   }
   document.getElementById('cal-days').innerHTML = html;
   document.getElementById('cal-detail').innerHTML = '';
@@ -788,21 +794,39 @@ function changeMonth(d) { calOffset += d; renderCalendar(); }
 function showDayDetail(key) {
   const rec = records[key];
   const el = document.getElementById('cal-detail');
-  if (!rec?.split) { el.innerHTML = ''; return; }
+  if (!rec?.split && !rec?.meals) { el.innerHTML = ''; return; }
   const dt = new Date(key + 'T00:00:00');
   const label = `${dt.getMonth()+1}월 ${dt.getDate()}일`;
-  if (rec.split === '쉬는날') {
-    el.innerHTML = `<div class="cal-detail"><div class="cal-detail-date">${label}</div><div class="cal-detail-split">😴 쉬는날</div></div>`;
+
+  const meals = rec?.meals || {};
+  const mealItems = [
+    { key: 'breakfast', label: '🌅 아침' },
+    { key: 'lunch',     label: '☀️ 점심' },
+    { key: 'dinner',    label: '🌙 저녁' },
+  ];
+  const mealHtml = mealItems.filter(m => meals[m.key]?.trim()).map(m =>
+    `<div class="cal-meal-row"><span class="cal-meal-label">${m.label}</span><span class="cal-meal-text">${meals[m.key]}</span></div>`
+  ).join('');
+
+  if (rec?.split === '쉬는날') {
+    el.innerHTML = `<div class="cal-detail">
+      <div class="cal-detail-date">${label}</div>
+      <div class="cal-detail-split">😴 쉬는날</div>
+      ${mealHtml ? `<div class="cal-meal-section">${mealHtml}</div>` : ''}
+    </div>`;
     return;
   }
-  const exHtml = (rec.exercises || []).map(ex => {
+
+  const exHtml = (rec?.exercises || []).map(ex => {
     const done = ex.sets.filter(s => s.done).length;
     return `<div>• ${ex.name} &nbsp;${done}/${ex.sets.length}세트</div>`;
-  }).join('') || '<div>기록 없음</div>';
+  }).join('');
+
   el.innerHTML = `<div class="cal-detail">
     <div class="cal-detail-date">${label}</div>
-    <div class="cal-detail-split">${rec.split} 💪</div>
-    <div class="cal-detail-ex">${exHtml}</div>
+    ${rec?.split ? `<div class="cal-detail-split">${rec.split === '직접' ? '직접 운동' : rec.split} 💪</div>` : ''}
+    ${exHtml ? `<div class="cal-detail-ex">${exHtml}</div>` : ''}
+    ${mealHtml ? `<div class="cal-meal-section">${mealHtml}</div>` : ''}
   </div>`;
 }
 

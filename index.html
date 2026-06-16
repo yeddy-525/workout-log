@@ -38,6 +38,9 @@
     .header-title{font-size:18px;font-weight:800;letter-spacing:-.03em;}
     .header-user{font-size:12px;color:var(--muted);margin-top:2px;}
     .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;}
+    .header-save-btn{padding:6px 14px;background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+    .header-save-btn:active{background:var(--blue-dk);}
+    .header-save-btn.saved{background:var(--green);}
 
     /* 하단 탭바 */
     .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);display:flex;z-index:20;padding-bottom:env(safe-area-inset-bottom);}
@@ -187,7 +190,10 @@
       <div class="header-title">운동기록 💪</div>
       <div class="header-user" id="header-user"></div>
     </div>
-    <div class="sync-dot" id="sync-dot"></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="sync-dot" id="sync-dot"></div>
+      <button class="header-save-btn" id="save-btn" onclick="saveAll()">저장</button>
+    </div>
   </div>
 
   <!-- 오늘 탭 -->
@@ -668,8 +674,27 @@ function toggleSet(ei, si) {
 }
 
 function finishWorkout() {
-  syncRecord(todayStr());
+  saveAll();
   alert('수고했어 💪 오늘도 완료!');
+}
+
+function saveAll() {
+  setSyncDot('syncing');
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '저장 중...';
+  btn.disabled = true;
+  syncRoutine();
+  syncRecord(todayStr());
+  setTimeout(() => {
+    setSyncDot('ok');
+    btn.textContent = '저장됨 ✓';
+    btn.classList.add('saved');
+    setTimeout(() => {
+      btn.textContent = '저장';
+      btn.classList.remove('saved');
+      btn.disabled = false;
+    }, 1500);
+  }, 800);
 }
 
 // ── 타이머 ──

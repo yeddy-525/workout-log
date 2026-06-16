@@ -576,6 +576,15 @@ function renderRoutine() {
       <input class="r-input" id="new-split-name" placeholder="분할명 (예: 가슴데이)" style="flex:1;" />
       <button class="r-add-btn" onclick="addSplit()">추가</button>
     </div>
+  </div>
+  <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+    <div class="section-label">앱 설정</div>
+    <div style="margin-bottom:8px;font-size:13px;color:var(--muted);">Google Apps Script URL</div>
+    <input class="r-input" id="gas-url-input" placeholder="https://script.google.com/macros/s/..." value="${apiUrl}" style="width:100%;font-size:11px;font-family:monospace;margin-bottom:8px;" />
+    <button class="r-add-btn" style="width:100%;" onclick="saveApiUrl()">저장</button>
+    <div id="api-url-result" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
+    <div style="margin-top:16px;font-size:13px;color:var(--muted);">사용자 변경</div>
+    <button onclick="changeUser()" style="margin-top:6px;width:100%;padding:10px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);">다른 닉네임으로 시작</button>
   </div>`;
 
   wrap.innerHTML = html;
@@ -619,6 +628,23 @@ function deleteExercise(si, ei) {
   saveRoutineLocal();
   syncRoutine();
   renderRoutine();
+}
+
+function saveApiUrl() {
+  const val = document.getElementById('gas-url-input').value.trim();
+  const el = document.getElementById('api-url-result');
+  if (!val) { el.textContent = 'URL을 입력해주세요'; el.style.color = 'var(--red)'; return; }
+  apiUrl = val;
+  localStorage.setItem('workout_api_url', val);
+  el.textContent = '✓ 저장됐어요! 동기화 시작...';
+  el.style.color = 'var(--green-dk)';
+  syncFromRemote();
+}
+
+function changeUser() {
+  if (!confirm('사용자를 변경할까요? 이 기기의 로컬 데이터는 유지돼요.')) return;
+  localStorage.removeItem('workout_user');
+  location.reload();
 }
 
 // ── GAS 동기화 ──

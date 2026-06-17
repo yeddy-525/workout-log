@@ -38,6 +38,11 @@ function saveRoutine_(user, data) {
   return { ok: true };
 }
 
+function dateToKey_(val) {
+  if (val instanceof Date) return Utilities.formatDate(val, 'Asia/Seoul', 'yyyy-MM-dd');
+  return String(val);
+}
+
 function saveRecord_(user, date, split, data) {
   if (!user || !date) return { ok: false, error: 'missing params' };
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -45,7 +50,7 @@ function saveRecord_(user, date, split, data) {
   if (!sheet) { sheet = ss.insertSheet('기록'); sheet.appendRow(['user','date','split','data','updatedAt']); }
   const rows = sheet.getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][0] === user && String(rows[i][1]) === date) {
+    if (rows[i][0] === user && dateToKey_(rows[i][1]) === date) {
       sheet.getRange(i+1, 3).setValue(split);
       sheet.getRange(i+1, 4).setValue(data);
       sheet.getRange(i+1, 5).setValue(new Date().toISOString());
@@ -73,11 +78,31 @@ function getAll_(user) {
     const rows = recSheet.getDataRange().getValues();
     for (let i = 1; i < rows.length; i++) {
       if (rows[i][0] === user) {
-        try { records[String(rows[i][1])] = JSON.parse(rows[i][3]); } catch(e) {}
+        try { records[dateToKey_(rows[i][1])] = JSON.parse(rows[i][3]); } catch(e) {}
       }
     }
   }
   return { ok: true, routine, records };
+}
+
+// 기록 시트 중복 행 정리 - GAS 에디터에서 수동 실행
+function cleanupRecords() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('기록');
+  if (!sheet) return;
+  const rows = sheet.getDataRange().getValues();
+  const seen = {};
+  const toDelete = [];
+  for (let i = rows.length - 1; i >= 1; i--) {
+    const key = rows[i][0] + '|' + dateToKey_(rows[i][1]);
+    if (seen[key]) {
+      toDelete.push(i + 1);
+    } else {
+      seen[key] = true;
+    }
+  }
+  toDelete.forEach(r => sheet.deleteRow(r));
+  return { deleted: toDelete.length };
 }
 
 function getExerciseDB_() {

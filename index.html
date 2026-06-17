@@ -614,7 +614,8 @@ function selectSplit(name) {
     const splitData = routine.splits.find(s => s.name === name);
     const exercises = (splitData?.exercises || []).map(ex => ({
       name: ex.name,
-      sets: Array.from({length: ex.sets}, () => ({ weight: ex.weight, reps: ex.reps, done: false }))
+      sets: Array.from({length: ex.sets}, () => ({ weight: ex.weight, reps: ex.reps, done: false })),
+      rest: ex.rest
     }));
     records[key] = { split: name, exercises, meals };
     saveRecords();

@@ -65,6 +65,8 @@
     .ex-card-name{font-size:15px;font-weight:700;}
     .ex-progress{font-size:12px;color:var(--muted);}
     .ex-progress.all-done{color:var(--green-dk);font-weight:600;}
+    .ex-del-btn{padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:white;font-size:11px;cursor:pointer;color:var(--muted);flex-shrink:0;font-family:inherit;}
+    .ex-del-btn:active{border-color:#ef4444;color:#ef4444;}
     .ex-sets{border-top:1px solid var(--border);}
     .set-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);}
     .set-row:last-child{border-bottom:none;}
@@ -673,7 +675,10 @@ function renderExercises() {
     return `<div class="ex-card">
       <div class="ex-card-header" onclick="toggleExpand(${ei})">
         <div class="ex-card-name">${ex.name}</div>
-        <div class="ex-progress ${exDone ? 'all-done' : ''}">${doneCount}/${total}세트 ${exDone ? '✓' : expanded ? '▲' : '▼'}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="ex-del-btn" onclick="event.stopPropagation();deleteTodayExercise(${ei})">삭제</button>
+          <div class="ex-progress ${exDone ? 'all-done' : ''}">${doneCount}/${total}세트 ${exDone ? '✓' : expanded ? '▲' : '▼'}</div>
+        </div>
       </div>
       ${setsHtml}
     </div>`;
@@ -682,6 +687,18 @@ function renderExercises() {
 
 function toggleExpand(ei) {
   expandedEx = expandedEx === ei ? null : ei;
+  renderExercises();
+}
+
+function deleteTodayExercise(ei) {
+  const key = todayStr();
+  if (!records[key]?.exercises) return;
+  if (!confirm(`'${records[key].exercises[ei].name}' 삭제할까요?`)) return;
+  records[key].exercises.splice(ei, 1);
+  if (expandedEx === ei) expandedEx = null;
+  else if (expandedEx > ei) expandedEx--;
+  saveRecords();
+  syncRecord(key);
   renderExercises();
 }
 
